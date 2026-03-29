@@ -1,0 +1,5 @@
+{
+  "name": "HabitTrack Pro",
+  "description": "A comprehensive full-stack habit tracking system with real-time progress monitoring, authentication, and productivity analytics.",
+  "requestFramePermissions": []
+}

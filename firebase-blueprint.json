@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID from Firebase Auth" },
+        "displayName": { "type": "string", "description": "User's display name" },
+        "email": { "type": "string", "description": "User's email address" },
+        "photoURL": { "type": "string", "description": "User's profile picture URL" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "A habit tracked by the user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique habit ID" },
+        "userId": { "type": "string", "description": "Owner's user ID" },
+        "name": { "type": "string", "description": "Name of the habit" },
+        "description": { "type": "string", "description": "Description of the habit" },
+        "frequency": { "type": "string", "enum": ["daily", "weekly"], "description": "How often the habit is performed" },
+        "target": { "type": "number", "description": "Target number of completions per period" },
+        "category": { "type": "string", "description": "Category (e.g., Health, Work, Personal)" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the habit was created" },
+        "isActive": { "type": "boolean", "description": "Whether the habit is currently being tracked" }
+      },
+      "required": ["userId", "name", "frequency"]
+    },
+    "Log": {
+      "title": "Log",
+      "description": "A completion log for a habit",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique log ID" },
+        "habitId": { "type": "string", "description": "ID of the associated habit" },
+        "userId": { "type": "string", "description": "Owner's user ID" },
+        "date": { "type": "string", "format": "date", "description": "Date of completion (YYYY-MM-DD)" },
+        "value": { "type": "number", "description": "Value recorded (e.g., 1 for binary completion, or quantity)" },
+        "notes": { "type": "string", "description": "Optional notes for the completion" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the log was recorded" }
+      },
+      "required": ["habitId", "userId", "date", "value"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/habits/{habitId}": {
+      "schema": "Habit",
+      "description": "Habit definitions"
+    },
+    "/logs/{logId}": {
+      "schema": "Log",
+      "description": "Habit completion logs"
+    }
+  }
+}

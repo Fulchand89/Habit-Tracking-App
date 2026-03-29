@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required) - Firebase Auth UID
+    //   - displayName: string (optional) - User's display name
+    //   - email: string (required) - User's email address
+    //   - photoURL: string (optional) - User's profile picture URL
+    //   - createdAt: timestamp (required) - Account creation timestamp
+    //
+    // Collection: habits
+    // Document ID: {habitId}
+    // Fields:
+    //   - userId: string (required) - Owner's user ID
+    //   - name: string (required) - Name of the habit
+    //   - description: string (optional) - Description of the habit
+    //   - frequency: string (required) - "daily" or "weekly"
+    //   - target: number (optional) - Target completions
+    //   - category: string (optional) - Category
+    //   - createdAt: timestamp (required) - Creation timestamp
+    //   - isActive: bool (required) - Active status
+    //
+    // Collection: logs
+    // Document ID: {logId}
+    // Fields:
+    //   - habitId: string (required) - Associated habit ID
+    //   - userId: string (required) - Owner's user ID
+    //   - date: string (required) - Date in YYYY-MM-DD format
+    //   - value: number (required) - Completion value
+    //   - notes: string (optional) - Notes
+    //   - timestamp: timestamp (required) - Log timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid is string && data.uid.size() > 0 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidHabit(data) {
+      return data.keys().hasAll(['userId', 'name', 'frequency']) &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.frequency in ['daily', 'weekly'];
+    }
+
+    function isValidLog(data) {
+      return data.keys().hasAll(['habitId', 'userId', 'date', 'value']) &&
+             data.userId == request.auth.uid &&
+             data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}$") &&
+             data.value is number;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    request.resource.data.uid == resource.data.uid;
+    }
+
+    match /habits/{habitId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidHabit(request.resource.data);
+      allow update: if isDocOwner() && isValidHabit(request.resource.data) && 
+                    request.resource.data.userId == resource.data.userId;
+      allow delete: if isDocOwner();
+    }
+
+    match /logs/{logId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidLog(request.resource.data);
+      allow update: if isDocOwner() && isValidLog(request.resource.data) && 
+                    request.resource.data.userId == resource.data.userId;
+      allow delete: if isDocOwner();
+    }
+  }
+}
